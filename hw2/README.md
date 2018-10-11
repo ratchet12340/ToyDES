@@ -1,4 +1,5 @@
 # Needham-Schroeder/Diffie-Hellman Implementation
+Below you will find instructions/implementation details for the hw2 practical implementation (programming) part.
 
 # Getting started
 Follow the steps below, _in order_:
