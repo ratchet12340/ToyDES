@@ -16,6 +16,7 @@ class Client:
         self.alice_address_1 = ('localhost', 42010)
         self.bob_address = ('localhost', 42012)
         self.bob_address_2 = ('localhost', 42013)
+        self.alice_address_2 = ('localhost', 42014)
 
         self.p = p
         self.g = g
@@ -33,6 +34,31 @@ class Client:
     def close_connection_to_KDC(self):
         self.kdc_sock.close()
 
+    def send_nonce_to_alice(self):
+        self.replay_nonce = gen_nonce()
+        des = ToyDES(self.secret_s)
+        encrypted_nonce = des.encrypt(self.replay_nonce)
+        packet = {'nonce_b_e': encrypted_nonce}
+        packet = encode_dict(packet)
+
+        self.nonce_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.nonce_sock.connect(self.alice_address_2)
+
+        self.nonce_sock.sendall(packet)
+        self.nonce_sock.close()
+
+    def get_nonce_from_bob(self):
+        self.nonce_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.nonce_sock.bind(self.alice_address_2)
+        self.nonce_sock.listen(1)
+        print("Waiting for Bob's nonce at", self.alice_address_2)
+
+        self.nonce_connection, self.nonce_address = self.nonce_sock.accept()
+        print("Bob connected")
+        packet = self.nonce_connection.recv(1024)
+        packet = decode_dict(packet)
+        self.nonce_b_e = packet['nonce_b_e']
+
     def wait_for_NS(self):
         """
         Alice will use this method to wait for KDC to initiate NS process
@@ -47,7 +73,7 @@ class Client:
 
     def start_NS(self):
         nonce_a = gen_nonce()
-        packet = {'user1': "alice", 'user2': "bob", 'nonce_a': nonce_a}
+        packet = {'user1': "alice", 'user2': "bob", 'nonce_a': nonce_a, 'nonce_b_e': self.nonce_b_e}
         packet = encode_dict(packet)
         self.kdc_connection.sendall(packet)
 
@@ -62,6 +88,7 @@ class Client:
         decrypted_packet = json.loads(decrypted_packet)
         self.k_ab = decrypted_packet['k_ab']
         self.k_ab_e = decrypted_packet['k_ab_e']
+        self.nonce_b_e = decrypted_packet['nonce_b_e']
 
     def host_client(self):
         """
@@ -77,9 +104,15 @@ class Client:
         packet = self.alice_connection.recv(1024)
         packet = decode_dict(packet)
         k_ab_e = packet['k_ab_e']
+        nonce_b_e = packet['nonce_b_e']
         des = ToyDES(self.secret_s)
+        if nonce_b_e == self.replay_nonce:
+            print("Replay attack prevented; nonces match!")
+        else:
+            print("Replay attack possible; nonces do not match!")
+
         k_ab = des.decrypt(k_ab_e)
-        
+
         packet = {'type': "ACK"}
         packet = encode_dict(packet)
         self.alice_connection.sendall(packet)
@@ -100,7 +133,7 @@ class Client:
         self.bob_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.bob_sock.connect(self.bob_address_2)
 
-        packet = {'k_ab_e': self.k_ab_e}
+        packet = {'k_ab_e': self.k_ab_e, 'nonce_b_e': self.nonce_b_e}
         packet = encode_dict(packet)
         self.bob_sock.sendall(packet)
 

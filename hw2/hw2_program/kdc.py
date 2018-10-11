@@ -1,5 +1,6 @@
 import socket
 import sys
+import time
 import random
 import json
 
@@ -112,8 +113,10 @@ class KDC:
 
     def handle_NS(self):
         packet = self.sock.recv(1024)
+        print("packet:", packet)
         packet = decode_dict(packet)
         nonce_a = packet['nonce_a']
+        nonce_b_e = packet['nonce_b_e']
 
         k_as = self.dh_dict['alice']['secret_s']
         k_bs = self.dh_dict['bob']['secret_s']
@@ -121,7 +124,7 @@ class KDC:
 
         des = ToyDES(k_bs)
         k_ab_e = des.encrypt(k_ab)
-        packet = {'nonce_a': nonce_a, 'k_ab': k_ab, 'k_ab_e': k_ab_e}
+        packet = {'nonce_a': nonce_a, 'k_ab': k_ab, 'k_ab_e': k_ab_e, 'nonce_b_e': nonce_b_e}
         packet = json.dumps(packet)
         #packet = encode_dict(packet)
         des.set_key(k_as)
@@ -133,7 +136,7 @@ class KDC:
         encrypted_packet = encrypted_packet.encode('UTF-8')
 
         self.sock.sendall(encrypted_packet)
-        
+
     def accept_cli(self):
         """
         Accepts new incoming client connections
@@ -157,6 +160,7 @@ class KDC:
                     self.sock.close()
                     self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     self.sock.bind(self.kdc_address_2)
+                    time.sleep(5)
                     self.sock.connect(self.alice_address)
                     self.handle_NS()
                     break

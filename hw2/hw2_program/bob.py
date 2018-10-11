@@ -9,6 +9,7 @@ from client import Client
 if __name__ == "__main__":
         bob = Client(gen_nonce(), gen_nonce(), gen_nonce(), "bob")
 
+        # DH part
         bob.connect_to_KDC()
         bob.send_pg()
         bob.recv_ack()
@@ -17,5 +18,8 @@ if __name__ == "__main__":
         bob.send_A()
         bob.recv_B()
 
+        # Replay part
+        bob.send_nonce_to_alice()
 
+        # NS part
         bob.host_client()

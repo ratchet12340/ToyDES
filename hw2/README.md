@@ -1,9 +1,13 @@
 # Needham-Schroeder Implementation
-TODO
 
-
-
-
+# Getting started
+Follow the steps below, _in order_:
+1. `cd` into your cloned repo, specifically the `hw2/hw2_program` folder.
+2. Run the KDC with `python3 kdc.py`
+3. Run the first user `python3 alice.py some_message_to_send_to_bob`
+4. Run the second user `python3 bob.py`
+5. Done!
+By now, you should have sent `some_message_to_send_to_bob` from one client to another.
 
 
 
