@@ -106,6 +106,8 @@ class Client:
         k_ab_e = packet['k_ab_e']
         nonce_b_e = packet['nonce_b_e']
         des = ToyDES(self.secret_s)
+        nonce_b_e = des.decrypt(nonce_b_e)
+        
         if nonce_b_e == self.replay_nonce:
             print("Replay attack prevented; nonces match!")
         else:
